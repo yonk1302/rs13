@@ -15,65 +15,25 @@ jobs:
 
     - name: Set up PowerShell script
       run: |
-        # Download ngrok
-        Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile ngrok.zip
-        Expand-Archive -Path ngrok.zip -DestinationPath ./
-
-        # Authenticate with ngrok
-        $Env:NGROK_AUTH_TOKEN = "${{ secrets.NGROK_AUTH_TOKEN }}"
-        .\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
-
         # Enable Remote Desktop
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
-
-        # Create or update runneradmin user
+        $password = '${{ secrets.RUNNER_ADMIN_PASSWORD }}'  # Ensure secret is properly referenced
         if (Get-LocalUser -Name "runneradmin" -ErrorAction SilentlyContinue) {
-            Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
+            Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText $password -Force)
         } else {
-            New-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force) -UserMayNotChangePassword -PasswordNeverExpires -AccountNeverExpires
+            New-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText $password -Force) -UserMayNotChangePassword -PasswordNeverExpires -AccountNeverExpires
             Add-LocalGroupMember -Group "Administrators" -Member "runneradmin"
         }
-
-        # Download and install WinRAR
-        Invoke-WebRequest -Uri "https://www.win-rar.com/fileadmin/winrar-versions/winrar/winrar-x64-601.exe" -OutFile winrar-x64-601.exe
-        Start-Process -FilePath .\winrar-x64-601.exe -ArgumentList "/S" -Wait
-        Write-Output "WinRAR installation completed."
-
-        # Download Avica
-        Invoke-WebRequest -Uri "https://download.avica.link/downloader/Avica_setup.exe" -OutFile "C:\Users\runneradmin\Downloads\Avica_setup.exe"
-        Write-Output "Avica downloaded to C:\Users\runneradmin\Downloads."
-        
-        # Download IDM
-        Invoke-WebRequest -Uri "https://mirror2.internetdownloadmanager.com/idman642build10.exe?v=lt&filename=idman642build10.exe" -OutFile "C:\Users\runneradmin\Downloads\idman642build10.exe"
-        Write-Output "IDM downloaded to C:\Users\runneradmin\Downloads."
-        
-        # Open File Explorer in Downloads
-        Start-Process -FilePath explorer.exe -ArgumentList "C:\Users\runneradmin\Downloads"
-                
-        # Create ngrok tunnel to remote desktop
-        Start-Process .\ngrok.exe -ArgumentList "tcp 3389" -NoNewWindow
-        Start-Sleep -Seconds 10
-        while ($true) {
-          try {
-            $tunnels = Invoke-RestMethod -Uri http://127.0.0.1:4040/api/tunnels
-            if ($tunnels.tunnels) {
-              $ngrokUrl = $tunnels.tunnels[0].public_url
-              Write-Output "ngrok tunnel is available at: $ngrokUrl"
-              break
-            }
-          } catch {
-            Write-Output "Waiting for ngrok to initialize..."
-            Start-Sleep -Seconds 5
-          }
-        }
-
-        # Keep the script running
-        while ($true) {
-          Start-Sleep -Seconds 300
-        }
-
-      shell: pwsh
-      env:
-        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+        #Create a folder under the drive root
+        mkdir actions-runner; cd actions-runner
+        # Download the latest runner package
+        Invoke-WebRequest -Uri https://github.com/actions/runner/releases/download/v2.317.0/actions-runner-win-x64-2.317.0.zip -OutFile actions-runner-win-x64-2.317.0.zip
+        # Optional: Validate the hash
+        if((Get-FileHash -Path actions-runner-win-x64-2.317.0.zip -Algorithm SHA256).Hash.ToUpper() -ne 'a74dcd1612476eaf4b11c15b3db5a43a4f459c1d3c1807f8148aeb9530d69826'.ToUpper()){ throw 'Computed checksum did not match' }
+        # Extract the installer
+        Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory("$PWD/actions-runner-win-x64-2.317.0.zip", "$PWD")
+        # Create the runner and start the configuration experience
+        ./config.cmd --url https://github.com/yonk1302/rs13 --token ${{ secrets.RUNNER_TOKEN }}
+        # Run it!
+        ./run.cmd       
