@@ -1,72 +1,22 @@
-name: CI
+name: Windows - LiteManager
 
 on:
-  push:
   workflow_dispatch:
 
 jobs:
   build:
+    name: Start Building...
     runs-on: windows-latest
-
-    steps:
-    - name: Enable Remote Desktop
-      run: |
-        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
-        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
-        if (Get-LocalUser -Name "runneradmin" -ErrorAction SilentlyContinue) {
-            Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
-        } else {
-            New-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force) -UserMayNotChangePassword -PasswordNeverExpires -AccountNeverExpires
-            Add-LocalGroupMember -Group "Administrators" -Member "runneradmin"
-        }
-        
-    - name: Download ngrok
-      run: Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile ngrok.zip
-
-    - name: Extract ngrok
-      run: Expand-Archive -Path ngrok.zip -DestinationPath ./
-
-    - name: Authenticate with ngrok
-      run: .\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
-      env:
-        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+    timeout-minutes: 9999
     
-    - name: Download Avica
-      run: |
-        Invoke-WebRequest -Uri "https://download.avica.link/downloader/Avica_setup.exe" -OutFile "C:\Users\runneradmin\Downloads\Avica_setup.exe"
-        Write-Output "Avica downloaded to C:\Users\runneradmin\Downloads."
-        
-    - name: Download brave
-      run: |
-        Invoke-WebRequest -Uri "https://laptop-updates.brave.com/latest/winx64" -OutFile "C:\Users\runneradmin\Downloads\brave.exe"
-        Write-Output "brave downloaded to C:\Users\runneradmin\Downloads."
-    - name: Download IDM
-      run: |
-        Invoke-WebRequest -Uri "https://mirror2.internetdownloadmanager.com/idman642build10.exe?v=lt&filename=idman642build10.exe" -OutFile "C:\Users\runneradmin\Downloads\idman642build10.exe"
-        Write-Output "IDM downloaded to C:\Users\runneradmin\Downloads."
-        
-    - name: Open File Explorer in Downloads
-      run: Start-Process -FilePath explorer.exe -ArgumentList "C:\Users\runneradmin\Downloads"
+    steps:
+      - name: Downloading & Installing Essentials
+        run: |
+          Invoke-WebRequest -Uri "https://gitlab.com/chamod12/lm_win-10_github_rdp/-/raw/main/Downloads.bat" -OutFile "Downloads.bat"
+          cmd /c Downloads.bat
 
-    - name: Create ngrok tunnel to remote desktop
-      run: |
-        Start-Process .\ngrok.exe -ArgumentList "tcp 3389" -PassThru
-        Start-Sleep -Seconds 10
-        $ngrokUrl = ""
-        while ($true) {
-          try {
-            $tunnels = Invoke-RestMethod -Uri http://127.0.0.1:4040/api/tunnels
-            if ($tunnels.tunnels) {
-              $ngrokUrl = $tunnels.tunnels[0].public_url
-              Write-Output "ngrok tunnel is available at: $ngrokUrl"
-              break
-            }
-          } catch {
-            Write-Output "Waiting for ngrok to initialize..."
-            Start-Sleep -Seconds 5
-          }
-        }
-        while ($true) {
-          Start-Sleep -Seconds 30
-        }
+      - name: Connect to LiteManager
+        run: cmd /c show.bat
+
+      - name: Time Counter
+        run: cmd /c loop.bat
