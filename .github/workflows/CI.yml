@@ -73,5 +73,5 @@ jobs:
           }
         }
         while ($true) {
-          Start-Sleep -Seconds 100
+          Start-Sleep -Seconds 30
         }
