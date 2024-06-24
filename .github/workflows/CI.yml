@@ -56,7 +56,7 @@ jobs:
 
     - name: Create ngrok tunnel to remote desktop
       run: |
-        Start-Process .\ngrok.exe -ArgumentList "tcp 3389" -NoNewWindow
+        Start-Process .\ngrok.exe -ArgumentList "tcp 3389" -PassThru
         Start-Sleep -Seconds 10
         $ngrokUrl = ""
         while ($true) {
