@@ -1,4 +1,4 @@
-name: Windows - LiteManager
+name: Windows - RustDesk
 
 on:
   workflow_dispatch:
@@ -12,11 +12,11 @@ jobs:
     steps:
       - name: Downloading & Installing Essentials
         run: |
-          Invoke-WebRequest -Uri "https://gitlab.com/chamod12/lm_win-10_github_rdp/-/raw/main/Downloads.bat" -OutFile "Downloads.bat"
+          Invoke-WebRequest -Uri "https://gitlab.com/chamod12/win10-github-rdp-rustdesk/-/raw/main/Downloads.bat" -OutFile "Downloads.bat"
           cmd /c Downloads.bat
 
-      - name: Connect to LiteManager
+      - name: Log In To RustDesk
         run: cmd /c show.bat
 
       - name: Time Counter
-        run: cmd /c loop.bat
+        run: python time.py
