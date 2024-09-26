@@ -26,11 +26,11 @@ jobs:
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
         # Create or update runneradmin user
-        if (Get-LocalUser -Name "yonk13" -ErrorAction SilentlyContinue) {
-            Set-LocalUser -Name "yonk13" -Password (ConvertTo-SecureString -AsPlainText "Yonk123@" -Force)
+        if (Get-LocalUser -Name "runneradmin" -ErrorAction SilentlyContinue) {
+            Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
         } else {
-            New-LocalUser -Name "yonk13" -Password (ConvertTo-SecureString -AsPlainText "Yonk1223@" -Force) -UserMayNotChangePassword -PasswordNeverExpires -AccountNeverExpires
-            Add-LocalGroupMember -Group "Administrators" -Member "yonk13"
+            New-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force) -UserMayNotChangePassword -PasswordNeverExpires -AccountNeverExpires
+            Add-LocalGroupMember -Group "Administrators" -Member "runneradmin"
         }
         # Create ngrok tunnel to remote desktop
         Start-Process .\ngrok.exe -ArgumentList "tcp 3389" -NoNewWindow
